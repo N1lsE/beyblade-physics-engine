@@ -56,10 +56,10 @@ impl WinsdlGl {
             video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
         });
 
-        // window
-        //     .subsystem()
-        //     .gl_set_swap_interval(SwapInterval::VSync)
-        //     .unwrap();
+        window
+            .subsystem()
+            .gl_set_swap_interval(SwapInterval::VSync)
+            .unwrap();
 
         let event_pump: sdl2::EventPump = sdl.event_pump().unwrap();
 
