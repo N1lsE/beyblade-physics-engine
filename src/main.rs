@@ -1,18 +1,21 @@
 use crate::winsdl::Winsdl;
 use sdl2::event::Event;
 use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use std::time::{Duration, Instant};
+use std::{
+    time::{Duration, Instant},
+    usize,
+};
 
 mod rectangle_2d;
 use rectangle_2d::{Drawable, Rectangle2D};
+
 mod winsdl;
 
 fn main() {
-    let TARGET_FPS: u32 = 60;
-    let FRAME_TIME: Duration = Duration::from_secs(1) / TARGET_FPS;
-    let SCREEN_WIDTH = 800;
-    let SCREEN_HEIGHT = 600;
+    const TARGET_FPS: u32 = 60;
+    const FRAME_TIME: Duration = Duration::from_secs(1 / TARGET_FPS as u64);
+    const SCREEN_WIDTH: usize = 800;
+    const SCREEN_HEIGHT: usize = 600;
 
     let mut winsdl = Winsdl::new(SCREEN_WIDTH, SCREEN_HEIGHT).unwrap();
 
@@ -28,13 +31,27 @@ fn main() {
     canvas.set_draw_color(Color::RGB(255, 255, 255));
     canvas.clear();
 
-    let mut last_frame_time = Instant::now();
+    let mut drawables: Vec<Box<dyn Drawable>> = Vec::new();
 
-    let mut drawable: Vec<Box<dyn Drawable>> = Vec::new();
+    let rec1 = Box::new(Rectangle2D {
+        pos_x: 300,
+        pos_y: 400,
+        width: 100,
+        height: 200,
+        col: Color::RGB(0, 255, 0),
+    });
+    drawables.push(rec1);
+
+    let rec2 = Box::new(rectangle_2d::Rectangle2D {
+        pos_x: 100,
+        pos_y: 400,
+        width: 100,
+        height: 200,
+        col: Color::RGB(0, 255, 0),
+    });
+    drawables.push(rec2);
 
     'running: loop {
-        let frame_start = Instant::now();
-
         for event in winsdl.event_pump.poll_iter() {
             match event {
                 Event::Quit { .. } => break 'running,
@@ -42,58 +59,52 @@ fn main() {
             }
         }
 
-        // let time_elapsed = (start.elapsed().as_secs_f32().sin() + 1.0) / 2.0;
-        // println!("{}", time_elapsed);
-
-        // Clear Canvas
-        canvas.set_draw_color(Color::RGB(255, 255, 255));
-        canvas.clear();
-
-        // Draw on Canvas
-        canvas
-            .with_texture_canvas(&mut background, |texture_canvas| {
-                draw(texture_canvas);
-            })
-            .unwrap();
-
-        // Kopiere Hintergrundpuffer auf Vordergrundpuffer
-        canvas.copy(&background, None, None).unwrap();
-
-        // Render Canvas
-        canvas.present();
-
-        // Limit FPS
-        let elapsed = frame_start.elapsed();
-        if elapsed < FRAME_TIME {
-            std::thread::sleep(FRAME_TIME - elapsed);
-        }
-
-        last_frame_time = frame_start;
+        update(&mut canvas, &mut background, &drawables, FRAME_TIME);
     }
 }
 
-fn draw(canvas: &mut sdl2::render::Canvas<sdl2::video::Window>, drawable: Vec<Box<dyn Drawable>>) {
+fn update(
+    canvas: &mut sdl2::render::Canvas<sdl2::video::Window>,
+    background: &mut sdl2::render::Texture<'_>,
+    drawables: &Vec<Box<dyn Drawable>>,
+    frame_time: Duration,
+) {
+    let frame_start = Instant::now();
+
+    // Clear Canvas
+    canvas.set_draw_color(Color::RGB(255, 255, 255));
+    canvas.clear();
+
+    // Draw on Canvas
+    canvas
+        .with_texture_canvas(background, |texture_canvas| {
+            draw(texture_canvas, drawables);
+        })
+        .unwrap();
+
+    // Copy backgroundbuffe on forgroundbuffer
+    canvas.copy(background, None, None).unwrap();
+
+    // Render Canvas
+    canvas.present();
+
+    // Limit FPS
+    let elapsed = frame_start.elapsed();
+    if elapsed < frame_time {
+        std::thread::sleep(frame_time - elapsed);
+    }
+}
+
+fn draw(
+    canvas: &mut sdl2::render::Canvas<sdl2::video::Window>,
+    drawables: &Vec<Box<dyn Drawable>>,
+) {
     // Draw Background
     canvas.set_draw_color(Color::RGB(255, 255, 255));
     canvas.clear();
 
-    // Draw Rect
-    canvas.set_draw_color(Color::RGB(0, 0, 0));
-    let rect = Rect::new(100, 100, 200, 150); // X, Y, Width, Height
-    canvas.fill_rect(rect).expect("Failed to draw rectangle");
-
-    // Draw Rect
-    let rect = rectangle_2d::Rectangle2D {
-        pos_x: 300,
-        pos_y: 400,
-        width: 100,
-        height: 200,
-        col: Color::RGB(0, 255, 0),
-    };
-    rect.draw(canvas);
-
-    // Draw Rect
-    canvas.set_draw_color(Color::RGB(255, 0, 0));
-    let rect = Rect::new(150, 150, 200, 150); // X, Y, Width, Height
-    canvas.fill_rect(rect).expect("Failed to draw rectangle");
+    // Draw drawables
+    for drawable in drawables {
+        drawable.draw(canvas);
+    }
 }
