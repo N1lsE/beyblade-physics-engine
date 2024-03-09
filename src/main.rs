@@ -1,8 +1,8 @@
-use sdl2::{pixels::Color, rect::Rect, render::Canvas, sys::Button1, video::Window};
+use sdl2::{pixels::Color, rect::Rect, render::Canvas, video::Window};
 
 mod Shapes;
 use Shapes::{
-    shapes_2d::{Button, Rectangle},
+    shapes_2d::{Button},
     traits::{Clickable, Drawable, Shape},
 };
 
@@ -42,11 +42,11 @@ fn main() {
             match event {
                 sdl2::event::Event::Quit { .. } => running = false,
                 sdl2::event::Event::MouseButtonUp {
-                    timestamp,
-                    window_id,
-                    which,
-                    mouse_btn,
-                    clicks,
+                    timestamp: _,
+                    window_id: _,
+                    which: _,
+                    mouse_btn: _,
+                    clicks: _,
                     x,
                     y,
                 } => {
